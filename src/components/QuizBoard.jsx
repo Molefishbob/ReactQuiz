@@ -1,18 +1,16 @@
+import { useContext, useEffect } from "react";
+
 import { QuizContext } from "../store/quiz-context";
 import Question from "./Question";
-import { useContext, useEffect } from "react";
-import QUESTIONS from "../questions";
+
+const TIMER = 10000;
 
 export default function QuizBoard() {
-  const { questions, onInit } = useContext(QuizContext);
+  const { setFirstQuestion, quizDone } = useContext(QuizContext);
 
   useEffect(() => {
-    onInit(QUESTIONS);
-  }, []);
+    setFirstQuestion();
+  }, [setFirstQuestion]);
 
-  return (
-    <section id="quiz">
-      <Question />
-    </section>
-  );
+  return quizDone ? <p>DONE</p> : <Question answerTimer={TIMER} />;
 }

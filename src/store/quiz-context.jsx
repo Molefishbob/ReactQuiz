@@ -1,28 +1,96 @@
-import { createContext, useReducer } from "react";
+import { createContext, useReducer, useCallback } from "react";
+
+import QUESTIONS from "../questions";
 
 export const QuizContext = createContext({
   questions: [],
+  activeQuestionIndex: null,
   activeQuestion: null,
+  selectedAnswer: null,
   answers: [],
+  currentPhase: null,
+  quizDone: false,
   onAnswer: () => {},
   onAnswerTimeExpired: () => {},
-  onInit: () => {},
+  onShowAnswerResult: () => {},
+  getQuestion: () => {},
 });
 
+function shuffle(ar) {
+  let array = [...ar];
+  let currentIndex = array.length;
+
+  while (currentIndex != 0) {
+    let randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex],
+      array[currentIndex],
+    ];
+  }
+  return array;
+}
+
 function quizReducer(state, action) {
-  if (action.type === "INIT") {
+  if (action.type === "ANSWER" || action.type === "TIME_EXPIRED") {
     return {
-      questions: [],
-      activeQuestionId: null,
-      answers: [],
-      ...action.payload,
+      ...state,
+      currentPhase: "answered",
+      selectedAnswer: {
+        text: action.payload.answer,
+        mode: "selected",
+      },
+      answers: [...state.answers, action.payload.answer],
     };
   }
-  if (action.type === "TIME_EXPIRED") {
-    return { ...state };
+  if (action.type === "NEXT_QUESTION") {
+    let i = state.activeQuestionIndex + 1;
+    if (i < state.questions.length) {
+      return {
+        ...state,
+        activeQuestionIndex: i,
+        currentPhase: "question",
+        activeQuestion: {
+          ...state.questions[i],
+          answers: shuffle(state.questions[i].answers),
+        },
+      };
+    } else {
+      return {
+        ...state,
+        hasAnswered: false,
+        quizDone: true,
+      };
+    }
   }
-  if (action.type === "ANSWER") {
-    return { ...state };
+  if (action.type === "FIRST_QUESTION") {
+    if (state.questions.length > 0) {
+      return {
+        ...state,
+        activeQuestionIndex: 0,
+        currentPhase: "question",
+        activeQuestion: {
+          ...state.questions[0],
+          answers: shuffle(state.questions[0].answers),
+        },
+      };
+    }
+    return undefined;
+  }
+  if (action.type === "SHOW_ANSWER_RESULT") {
+    return {
+      ...state,
+      currentPhase: "result",
+      selectedAnswer: {
+        ...state.selectedAnswer,
+        mode:
+          state.selectedAnswer.text ===
+          state.questions[state.activeQuestionIndex].answers[0]
+            ? "correct"
+            : "wrong",
+      },
+    };
   }
 
   return state;
@@ -30,16 +98,24 @@ function quizReducer(state, action) {
 
 export default function QuizContextProvider({ children }) {
   const [quizState, quizStateDispatch] = useReducer(quizReducer, {
-    questions: [],
-    activeQuestionId: null,
+    questions: [...shuffle(QUESTIONS)],
+    activeQuestionIndex: null,
+    activeQuestion: null,
+    selectedAnswer: null,
+    currentPhase: "waiting",
+    quizDone: false,
     answers: [],
   });
 
-  function handleAnswerTimeExpired() {
-    quizStateDispatch({
-      type: "TIME_EXPIRED",
-    });
-  }
+  const handleAnswerTimeExpired = useCallback(
+    function handleAnswerTimeExpired() {
+      quizStateDispatch({
+        type: "TIME_EXPIRED",
+        payload: { answer: "" },
+      });
+    },
+    []
+  );
 
   function handleAnswer(answer) {
     quizStateDispatch({
@@ -49,23 +125,28 @@ export default function QuizContextProvider({ children }) {
       },
     });
   }
-
-  function handleInit(questions) {
+  const handleFirstQuestion = useCallback(function handleFirstQuestion() {
     quizStateDispatch({
-      type: "INIT",
-      payload: {
-        questions,
-      },
+      type: "FIRST_QUESTION",
     });
-  }
+  }, []);
+
+  const handleShowAnswerResult = useCallback(function handleShowAnswerResult() {
+    quizStateDispatch({
+      type: "SHOW_ANSWER_RESULT",
+    });
+  }, []);
 
   const context = {
-    questions: quizState.questions,
-    activeQuestionId: quizState.activeQuestionId,
+    activeQuestion: quizState.activeQuestion,
+    selectedAnswer: quizState.selectedAnswer,
     answers: quizState.answers,
+    quizDone: quizState.quizDone,
+    currentPhase: quizState.currentPhase,
     onAnswer: handleAnswer,
     onAnswerTimeExpired: handleAnswerTimeExpired,
-    onInit: handleInit,
+    onShowAnswerResult: handleShowAnswerResult,
+    setFirstQuestion: handleFirstQuestion,
   };
 
   return (
