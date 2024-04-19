@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { QuizContext } from "../store/quiz-context";
 
 export default function ProgressBar({ max }) {
-  const { hasAnswered, selectedAnswer } = useContext(QuizContext);
+  const { currentPhase } = useContext(QuizContext);
   const [remainingTime, setRemainingTime] = useState(max);
 
   useEffect(() => {
@@ -14,15 +14,11 @@ export default function ProgressBar({ max }) {
     return () => {
       clearInterval(interval);
     };
-  }, [hasAnswered, max]);
+  }, [max]);
 
   return (
     <progress
-      className={
-        hasAnswered && selectedAnswer.mode == "selected"
-          ? "answered"
-          : undefined
-      }
+      className={currentPhase === "answered" ? "answered" : undefined}
       value={remainingTime}
       max={max}
     ></progress>

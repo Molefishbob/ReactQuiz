@@ -4,7 +4,6 @@ import QUESTIONS from "../questions";
 
 export const QuizContext = createContext({
   questions: [],
-  activeQuestionIndex: null,
   activeQuestion: null,
   selectedAnswer: null,
   answers: [],
@@ -13,7 +12,8 @@ export const QuizContext = createContext({
   onAnswer: () => {},
   onAnswerTimeExpired: () => {},
   onShowAnswerResult: () => {},
-  getQuestion: () => {},
+  setFirstQuestion: () => {},
+  onNextQuestion: () => {},
 });
 
 function shuffle(ar) {
@@ -36,20 +36,32 @@ function quizReducer(state, action) {
   if (action.type === "ANSWER" || action.type === "TIME_EXPIRED") {
     return {
       ...state,
-      currentPhase: "answered",
+      currentPhase: action.type === "ANSWER" ? "answered" : "result",
       selectedAnswer: {
         text: action.payload.answer,
-        mode: "selected",
+        mode: action.type === "ANSWER" ? "selected" : "wrong",
       },
-      answers: [...state.answers, action.payload.answer],
+      answers: [
+        ...state.answers,
+        {
+          isCorrect:
+            action.payload.answer ===
+            state.questions[
+              state.answers.length > 0 ? state.answers.length - 1 : 0
+            ].answers[0]
+              ? true
+              : false,
+          answer: action.payload.answer,
+        },
+      ],
     };
   }
   if (action.type === "NEXT_QUESTION") {
-    let i = state.activeQuestionIndex + 1;
+    let i = state.answers.length;
     if (i < state.questions.length) {
       return {
         ...state,
-        activeQuestionIndex: i,
+        selectedAnswer: null,
         currentPhase: "question",
         activeQuestion: {
           ...state.questions[i],
@@ -59,8 +71,7 @@ function quizReducer(state, action) {
     } else {
       return {
         ...state,
-        hasAnswered: false,
-        quizDone: true,
+        currentPhase: "done",
       };
     }
   }
@@ -68,7 +79,6 @@ function quizReducer(state, action) {
     if (state.questions.length > 0) {
       return {
         ...state,
-        activeQuestionIndex: 0,
         currentPhase: "question",
         activeQuestion: {
           ...state.questions[0],
@@ -86,7 +96,7 @@ function quizReducer(state, action) {
         ...state.selectedAnswer,
         mode:
           state.selectedAnswer.text ===
-          state.questions[state.activeQuestionIndex].answers[0]
+          state.questions[state.answers.length - 1].answers[0]
             ? "correct"
             : "wrong",
       },
@@ -99,7 +109,6 @@ function quizReducer(state, action) {
 export default function QuizContextProvider({ children }) {
   const [quizState, quizStateDispatch] = useReducer(quizReducer, {
     questions: [...shuffle(QUESTIONS)],
-    activeQuestionIndex: null,
     activeQuestion: null,
     selectedAnswer: null,
     currentPhase: "waiting",
@@ -131,6 +140,12 @@ export default function QuizContextProvider({ children }) {
     });
   }, []);
 
+  const handleNextQuestion = useCallback(function handleNextQuestion() {
+    quizStateDispatch({
+      type: "NEXT_QUESTION",
+    });
+  }, []);
+
   const handleShowAnswerResult = useCallback(function handleShowAnswerResult() {
     quizStateDispatch({
       type: "SHOW_ANSWER_RESULT",
@@ -147,6 +162,7 @@ export default function QuizContextProvider({ children }) {
     onAnswerTimeExpired: handleAnswerTimeExpired,
     onShowAnswerResult: handleShowAnswerResult,
     setFirstQuestion: handleFirstQuestion,
+    onNextQuestion: handleNextQuestion,
   };
 
   return (

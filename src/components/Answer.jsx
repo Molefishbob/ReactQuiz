@@ -2,12 +2,15 @@ import { useContext } from "react";
 import { QuizContext } from "../store/quiz-context";
 
 export default function Answer({ text }) {
-  const { onAnswer, selectedAnswer, hasAnswered } = useContext(QuizContext);
+  const { onAnswer, selectedAnswer } = useContext(QuizContext);
 
   let classNames = "";
 
   if (selectedAnswer) {
-    classNames = selectedAnswer.text === text ? selectedAnswer.mode : undefined;
+    classNames =
+      selectedAnswer.text === text || selectedAnswer.text === ""
+        ? selectedAnswer.mode
+        : undefined;
   } else {
     classNames = undefined;
   }
@@ -15,7 +18,7 @@ export default function Answer({ text }) {
   return (
     <li className="answer">
       <button
-        disabled={hasAnswered}
+        disabled={selectedAnswer}
         className={classNames}
         onClick={() => onAnswer(text)}
       >

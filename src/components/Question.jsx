@@ -7,22 +7,24 @@ import { QuizContext } from "../store/quiz-context";
 export default function Question({ answerTimer }) {
   const {
     activeQuestion,
-    hasAnswered,
+    currentPhase,
     onAnswerTimeExpired,
     onShowAnswerResult,
+    onNextQuestion,
   } = useContext(QuizContext);
 
+  const time = currentPhase !== "question" ? 1000 : answerTimer;
+
   useEffect(() => {
-    const timer = setTimeout(
-      () => {
-        if (hasAnswered) {
-          onShowAnswerResult();
-        } else {
-          onAnswerTimeExpired();
-        }
-      },
-      hasAnswered ? 3000 : answerTimer
-    );
+    const timer = setTimeout(() => {
+      if (currentPhase === "answered") {
+        onShowAnswerResult();
+      } else if (currentPhase === "question") {
+        onAnswerTimeExpired();
+      } else {
+        onNextQuestion();
+      }
+    }, time);
 
     return () => {
       clearTimeout(timer);
@@ -31,18 +33,17 @@ export default function Question({ answerTimer }) {
     activeQuestion,
     onAnswerTimeExpired,
     onShowAnswerResult,
+    onNextQuestion,
     answerTimer,
-    hasAnswered,
+    currentPhase,
+    time,
   ]);
 
   return (
     <div id="question">
       {activeQuestion && (
         <>
-          <ProgressBar
-            max={hasAnswered ? 3000 : answerTimer}
-            question={activeQuestion}
-          />
+          <ProgressBar max={time} question={activeQuestion} />
 
           <h2>{activeQuestion.text}</h2>
           <ul id="answers">
