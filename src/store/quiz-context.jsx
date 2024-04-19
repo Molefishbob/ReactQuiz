@@ -120,7 +120,7 @@ export default function QuizContextProvider({ children }) {
     function handleAnswerTimeExpired() {
       quizStateDispatch({
         type: "TIME_EXPIRED",
-        payload: { answer: "" },
+        payload: { answer: null },
       });
     },
     []
@@ -153,6 +153,7 @@ export default function QuizContextProvider({ children }) {
   }, []);
 
   const context = {
+    questions: quizState.questions,
     activeQuestion: quizState.activeQuestion,
     selectedAnswer: quizState.selectedAnswer,
     answers: quizState.answers,

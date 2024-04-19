@@ -16,6 +16,8 @@ export default function QuizBoard() {
   return currentPhase === "done" ? (
     <Summary />
   ) : (
-    <Question answerTimer={TIMER} />
+    <main id="quiz">
+      <Question answerTimer={TIMER} />
+    </main>
   );
 }

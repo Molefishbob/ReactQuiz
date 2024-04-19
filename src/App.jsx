@@ -6,11 +6,9 @@ function App() {
   return (
     <>
       <Header />
-      <main id="quiz">
-        <QuizContextProvider>
-          <QuizBoard />
-        </QuizContextProvider>
-      </main>
+      <QuizContextProvider>
+        <QuizBoard />
+      </QuizContextProvider>
     </>
   );
 }

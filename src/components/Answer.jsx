@@ -8,7 +8,7 @@ export default function Answer({ text }) {
 
   if (selectedAnswer) {
     classNames =
-      selectedAnswer.text === text || selectedAnswer.text === ""
+      !selectedAnswer.text || selectedAnswer.text === text
         ? selectedAnswer.mode
         : undefined;
   } else {
